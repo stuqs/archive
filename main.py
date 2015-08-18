@@ -1,5 +1,5 @@
-from os import listdir, path
-from zipfile import ZipFile
+import os
+import zipfile
 
 
 def get_files_of_a_month(original_list):
@@ -14,11 +14,12 @@ def get_files_of_a_month(original_list):
     year = (str(original_list[0]).split("-")[1])
     month = (str(original_list[0]).split("-")[2])
 
-    arc_name = dir_out + "archive-" + year + "-" + month + ".rar"
+    arc_name = os.path.join(dir_out, "archive-" + year + "-" + month + ".rar")
     arc_list = []
     for name in original_list[:]:
         if str(original_list[0]).split("-")[1] == year and str(original_list[0]).split("-")[2] == month:
-            arc_list.append(name)
+            # Make absolute path
+            arc_list.append(os.path.join(dir_in, name))
             original_list.remove(name)
     return original_list, arc_list, arc_name
 
@@ -30,28 +31,33 @@ def create_archieve(arc_list, arc_name):
     :param arc_name: name of archive
     :return: true if successful, else false
     """
-    # Make absolute path
-    for i in range(len(arc_list) - 1):
-        arc_list[i] = path.abspath(arc_list[i])
     # Make Zip archive
     try:
-        print(arc_name)
-        with ZipFile(arc_name, 'a') as zip_archive:
+        with zipfile.ZipFile(arc_name, 'a', compression=zipfile.ZIP_DEFLATED) as zip_archive:
             for name in arc_list:
-                zip_archive.write(name)
+                zip_archive.write(name, os.path.basename(name))
             zip_archive.close()
-    except IOError:
+    except:
         return False
     return True
 
 
+def remove_file_list(file_list):
+    """
+    Delete all files from the list
+    :param file_list: list of deleted files
+    """
+    for file in file_list:
+        os.remove(file)
+
+
 # Input dir
-dir = r"D:\\ARH"
+dir_in = r"D:\ARH"
 # Output dir
-dir_out = r"D:\\ARH\\WEEKLY\\"
+dir_out = r"D:\ARH\WEEKLY"
 
 # Receive list of file from dir
-files = listdir(dir)
+files = os.listdir(dir_in)
 
 # Filter list for txt files
 pathes = list(filter(lambda x: x.endswith('.txt'), files))
@@ -60,29 +66,9 @@ pathes = list(filter(lambda x: x.endswith('.txt'), files))
 if len(pathes) > 1:
     pathes = pathes[0:-1]
 
-print(pathes)
-print("-"*20)
+    while len(pathes) > 0:
 
-while len(pathes) > 0:
+        pathes, arc_list, arc_name = get_files_of_a_month(pathes)
 
-    pathes, arc_list, arc_name = get_files_of_a_month(pathes)
-
-    if create_archieve(arc_list, arc_name):
-        # TODO delete arc_list
-        pass
-    else:
-        # TODO create log
-        pass
-
-
-    print(pathes)
-    print(arc_list)
-    print(arc_name)
-    print("-"*20)
-
-
-
-
-
-
-
+        if create_archieve(arc_list, arc_name):
+            remove_file_list(arc_list)
